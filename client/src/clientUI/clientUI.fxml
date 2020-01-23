@@ -15,13 +15,13 @@
         <items>
           <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="100.0" prefWidth="160.0">
                <children>
-                  <Button fx:id="startBtn" layoutX="118.0" layoutY="47.0" mnemonicParsing="false" onMouseClicked="#changeLabel" text="Button" />
+                  <Button fx:id="startBtn" layoutX="118.0" layoutY="47.0" mnemonicParsing="false" text="Start" />
                   <Label fx:id="firstLabel" layoutX="113.0" layoutY="25.0" text="Hello world" />
                </children>
             </AnchorPane>
           <AnchorPane>
                <children>
-                  <TextArea layoutX="49.0" layoutY="-40.0" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" prefHeight="160.0" prefWidth="298.0" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.topAnchor="0.0" />
+                  <TextArea fx:id="clientLog" layoutX="49.0" layoutY="-40.0" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" prefHeight="160.0" prefWidth="298.0" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.topAnchor="0.0" />
                </children>
             </AnchorPane>
         </items>
