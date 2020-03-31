@@ -1,80 +1,110 @@
 package serverUI;
 
-import clientUI.ClientUIController;
+import javafx.animation.AnimationTimer;
 import javafx.fxml.FXML;
-import javafx.fxml.FXMLLoader;
+import javafx.fxml.Initializable;
+import javafx.scene.control.Alert;
 import javafx.scene.control.Label;
+import javafx.scene.control.TextField;
 import javafx.scene.paint.Paint;
 import javafx.scene.shape.Shape;
+import org.eclipse.milo.opcua.stack.core.types.enumerated.ServerState;
+import serverLogic.RedundantServer;
+import serverLogic.RedundantServerSet;
 
-import java.io.IOException;
+import java.net.URL;
+import java.util.ResourceBundle;
 
-public class ServerUIController {
+public class ServerUIController implements Initializable{
+    public final String NO_DATA_VALUE = "No data!";
+
+    private RedundantServerSet serverSet;
+    private boolean setIsRunning = false;
+
     @FXML
-    private Shape statusLed;
+    private Label lblMasterServerID;
 
     @FXML
-    private Label serverLabel;
+    private Label lblSecondServerID;
 
-    private ClientUIController clientController;
+    @FXML
+    private TextField txtDataValue;
 
-    private boolean isRunning = false;
-    private boolean isSampling = false;
+    @FXML
+    private Shape statusLedMain;
 
-    private String serverName = "OPCUAServer";
+    @FXML
+    private Shape statusLedSecondary;
 
-    public void initialize() {
-        try {
-            FXMLLoader loader = new FXMLLoader(getClass().getResource("../clientUI/clientUI.fxml"));
-            loader.load();
-            clientController = loader.getController();
-        }
-        catch (IOException e){
-            System.err.println("Error loading FXML file: " + e);
-        }
+    public void startServerSet (){
+        new Thread(() -> {
+            try {
+                serverSet = new RedundantServerSet(3);
+                setIsRunning = true;
+                serverSet.run();
+            }
+            catch (Exception e){
+                Alert exceptionAlert = new Alert(Alert.AlertType.ERROR);
+                exceptionAlert.setTitle("Exception " + e);
+                exceptionAlert.setContentText("An error happens running the redundant server set.\n" +
+                        "Message: " + e.getLocalizedMessage());
+                exceptionAlert.setHeaderText("Error occourred");
+            }
+        }).start();
     }
 
-    private void startServer (){
-        if (!isRunning) {
-            isRunning = true;
-            serverLabel.setText("Server is running");
-            statusLed.setFill(Paint.valueOf("#00ff00"));
-        }
+    public void stopServerSet (){
+        setIsRunning = false;
+        serverSet.shutdown();
     }
 
-    private void stopServer (){
-        if (isRunning){
-            isRunning = false;
-            serverLabel.setText("Server is not running");
-            statusLed.setFill(Paint.valueOf("#ff0000"));
-        }
+    @Override
+    public void initialize (URL url, ResourceBundle resourceBundle){
+        txtDataValue.setText(NO_DATA_VALUE);
+        new AnimationTimer(){
+            @Override
+            public void handle (long l){
+                updateGUI();
+            }
+        }.start();
     }
 
-    //Receive message from client
-    public void transferMessage (String message) {
-        //Display the message
-        switch (message){
-            case "start":
-                startServer();
-                clientController.transferMessage(serverName, "started");
-                break;
+    private Paint getServerStateColor (ServerState state){
+        switch (state){
+            case Running:
+                return Paint.valueOf("#00ee00");
 
-            case "stop":
-                stopServer();
-                clientController.transferMessage(serverName, "stopped");
-                break;
+            case Failed:
+                return Paint.valueOf("#ee0000");
 
+            case Suspended:
+                return Paint.valueOf("0000ee");
+
+            case Shutdown:
+                return Paint.valueOf("#eeeeff");
+
+            case NoConfiguration:
+            case Test:
+            case CommunicationFault:
+            case Unknown:
             default:
-                break;
+                return Paint.valueOf("#000000");
         }
     }
 
-    // Getters and setters
-    public String getServerName() {
-        return serverName;
+    public void updateGUI(){
+        if (serverSet != null){
+            RedundantServer master = serverSet.getCurrentServer();
+            RedundantServer secondary = serverSet.getCurrentClient();
+            txtDataValue.setText(master.getAnalogValue().toString());
+            lblMasterServerID.textProperty().setValue(master.getServerId());
+            lblSecondServerID.textProperty().setValue(secondary.getServerId());
+            statusLedMain.fillProperty().setValue(getServerStateColor(master.getServerState()));
+            statusLedSecondary.fillProperty().setValue(getServerStateColor(secondary.getServerState()));
+        }
     }
 
-    public void setServerName(String serverName) {
-        this.serverName = serverName;
+    public boolean isServerRunning (){
+        return setIsRunning;
     }
 }
